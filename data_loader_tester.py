@@ -3,13 +3,18 @@ from gcommand_loader import GCommandLoader
 import torch
 
 ctc_loss = torch.nn.CTCLoss()
-dataset = GCommandLoader('./data/train/')
-idx_to_class = {v: k for k, v in dataset.class_to_idx.items()}
+train_dataset = GCommandLoader('./data/train/')
+valid_dataset = GCommandLoader('./data/valid/')
+idx_to_class = {v: k for k, v in train_dataset.class_to_idx.items()}
 
 c2i = "abcdefghijklmnopqrstuvwxyz"
 
 train_loader = torch.utils.data.DataLoader(
-    dataset, batch_size=100, shuffle=None,
+    train_dataset, batch_size=100, shuffle=None,
+    num_workers=20, pin_memory=True, sampler=None)
+
+valid_loader = torch.utils.data.DataLoader(
+    valid_dataset, batch_size=100, shuffle=None,
     num_workers=20, pin_memory=True, sampler=None)
 
 
@@ -48,13 +53,30 @@ def train(line_tensor,label):
         loss.backward()
 
 
-    # Add parameters' gradients to their values, multiplied by learning rate
-    for p in rnn.parameters():
-        p.data.add_(-learning_rate, p.grad.data)
 
-    return output, loss.item()
+def predict(line_tensor,label):
+    for batch_index in range(line_tensor.size()[0]):
+        rnn.zero_grad()
+        hidden = rnn.initHidden()
+        flat_input = line_tensor[batch_index].reshape((101,161))
+        chars = []
+        for time_frame in flat_input:
+            output, hidden = rnn(time_frame, hidden)
+            chars.append(output.argmax().item())
+        word = [chars[0]] + [c for index, c in enumerate(chars[1:],start=1) if c!=chars[index-1] ]
+        word = [c2i[i] for i in word if i != 27]
+        word = "".join(word)
+        print(word)
+        # Initialize random batch of targets (0 = blank, 1:C+1 = classes)
 
 
-for k, (input, label) in enumerate(train_loader):
-    train(input,label)
+# for k, (input, label) in enumerate(train_loader):
+#     train(input,label)
+#     if k>1:
+#         break
+
+
+rnn.eval()
+for k, (input, label) in enumerate(valid_dataset):
+    predict(input,label)
     # print(input.size(), len(label))
