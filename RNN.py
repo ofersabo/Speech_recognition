@@ -6,18 +6,14 @@ class RNN(nn.Module):
         super(RNN, self).__init__()
 
         self.hidden_size = hidden_size
+        self.rnn_module = nn.RNN(input_size,hidden_size,batch_first=True,bidirectional=False)
+        self.h2o = nn.Linear( hidden_size, output_size)
+        # self.i2o = nn.Linear(input_size + hidden_size, output_size)
+        self.softmax = nn.LogSoftmax(dim=1)
 
-        self.i2h = nn.Linear(input_size + hidden_size, hidden_size)
-        self.i2o = nn.Linear(input_size + hidden_size, output_size)
-        self.softmax = nn.LogSoftmax(dim=0)
-
-    def forward(self, input, hidden):
-        combined = torch.cat((input, hidden))
-        hidden = self.i2h(combined)
-        output = self.i2o(combined)
-        output = self.softmax(output)
-        return output, hidden
-
-    def initHidden(self):
-        return torch.zeros(self.hidden_size)
-
+    def forward(self, input):
+        packed_output,h_n = self.rnn_module(input)
+        output_from_rnn = self.h2o(packed_output)
+        # output = self.i2o(combined)
+        output = self.softmax(output_from_rnn)
+        return output
