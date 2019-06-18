@@ -1,7 +1,9 @@
-from RNN import RNN
+from our_model import *
 from gcommand_loader import GCommandLoader
 import torch
 import torch.nn as nn
+
+from our_model import get_seq_length
 
 ctc_loss = torch.nn.CTCLoss(blank=26)
 train_dataset = GCommandLoader('./data/train/')
@@ -22,12 +24,12 @@ valid_loader = torch.utils.data.DataLoader(
 use_cuda = torch.cuda.is_available()
 device = torch.device("cuda:0" if use_cuda else "cpu")
 
-n_hidden = 128
-model = RNN(161, n_hidden, 27).to(device)
+model = our_model().to(device)
+
 
 def apply(model, ctc_loss, batch, labels):
     import torch.nn.functional as F
-    lengths = torch.LongTensor([len(s) for s in batch])
+    lengths = torch.LongTensor([get_seq_length(s.size(2)) for s in batch])
     target_lengths = torch.LongTensor([len(idx_to_class[label.item()]) for label in labels])
     targets = []
     max_length = target_lengths.max()
@@ -43,7 +45,7 @@ def apply(model, ctc_loss, batch, labels):
     targets = torch.stack(targets)
     batch = batch.to(device)
     pred = model(torch.autograd.Variable(batch))
-    pred = pred.view(101, pred.size(0), 27)
+    pred = pred.view(rnn_seq_length, pred.size(0), number_of_classes)
     loss = ctc_loss(pred, targets, lengths, target_lengths)
     return pred, loss
 
@@ -58,7 +60,7 @@ def greedy_decoding(pred):
     :return: word
     '''
     list_of_words = []
-    for seq in pred.view(pred.size(1), 101, 27):
+    for seq in pred.view(pred.size(1), rnn_seq_length, number_of_classes):
         chars = torch.argmax(seq, dim=1).tolist()
         word = [chars[0]] + [c for index, c in enumerate(chars[1:], start=1) if c != chars[index - 1]]
         word = [c2i[i] for i in word if i != 26]
@@ -72,7 +74,6 @@ def accuracy_on_dev(model, dev):
     model.eval()
     total_acc = 0
     for k, (batch_input, batch_label) in enumerate(dev):
-        batch_input = batch_input.view(batch_input.size(0), 101, 161)
         pred, loss = apply(model, ctc_loss, batch_input, batch_label)
         words = greedy_decoding(pred)
         gold_set = set([(idx_to_class[word.item()],word_index) for word_index,word in enumerate(batch_label)])
@@ -82,13 +83,12 @@ def accuracy_on_dev(model, dev):
 
 
 def train_model(model, train, dev):
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.01, weight_decay=1e-4)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=1e-4)
     ctc_loss = torch.nn.CTCLoss()
     for epoch in range(100):
         print("Epoch {}".format(epoch))
         for k, (batch_input, batch_label) in enumerate(train):
             model.train()
-            batch_input = batch_input.view(100, 101, 161)
             optimizer.zero_grad()
             pred, loss = apply(model, ctc_loss, batch_input, batch_label)
             loss.backward()
