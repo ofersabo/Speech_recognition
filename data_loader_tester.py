@@ -18,12 +18,12 @@ valid_loader = torch.utils.data.DataLoader(
     valid_dataset, batch_size=100, shuffle=True,
     num_workers=20, pin_memory=True, sampler=None)
 
-n_hidden = 128
-model = RNN(161, n_hidden, 27)
 
 use_cuda = torch.cuda.is_available()
 device = torch.device("cuda:0" if use_cuda else "cpu")
 
+n_hidden = 128
+model = RNN(161, n_hidden, 27).to(device)
 
 def apply(model, ctc_loss, batch, labels):
     import torch.nn.functional as F
@@ -41,7 +41,7 @@ def apply(model, ctc_loss, batch, labels):
         padded_tensor = F.pad(target_word, (0, pad_length))
         targets.append(padded_tensor)
     targets = torch.stack(targets)
-
+    batch = batch.to(device)
     pred = model(torch.autograd.Variable(batch))
     pred = pred.view(101, pred.size(0), 27)
     loss = ctc_loss(pred, targets, lengths, target_lengths)
@@ -84,11 +84,8 @@ def accuracy_on_dev(model, dev):
 def train_model(model, train, dev):
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01, weight_decay=1e-4)
     ctc_loss = torch.nn.CTCLoss()
-    for epoch in range(10):
+    for epoch in range(100):
         print("Epoch {}".format(epoch))
-        y_true = list()
-        y_pred = list()
-        total_loss = 0
         for k, (batch_input, batch_label) in enumerate(train):
             model.train()
             batch_input = batch_input.view(100, 101, 161)
@@ -96,7 +93,7 @@ def train_model(model, train, dev):
             pred, loss = apply(model, ctc_loss, batch_input, batch_label)
             loss.backward()
             optimizer.step()
-            print(loss.value())
+            print(loss)
 
         acc = accuracy_on_dev(model, dev)
         print("acc is ")

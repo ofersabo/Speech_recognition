@@ -4,7 +4,7 @@ import torch
 class RNN(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
         super(RNN, self).__init__()
-
+        # self.device = device
         self.hidden_size = hidden_size
         self.rnn_module = nn.RNN(input_size,hidden_size,batch_first=True,bidirectional=False)
         self.h2o = nn.Linear( hidden_size, output_size)
