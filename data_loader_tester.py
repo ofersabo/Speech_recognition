@@ -5,7 +5,7 @@ import torch.nn as nn
 import matplotlib.pyplot as plt
 from our_model import get_seq_length
 import pickle
-
+import os
 ctc_loss = torch.nn.CTCLoss(blank=26)
 train_dataset = GCommandLoader('./data/train/')
 valid_dataset = GCommandLoader('./data/valid/')
@@ -31,6 +31,8 @@ total_acc = []
 
 def plot_loss(acc,train_loss,dev_loss):
     preffix = '/tmp/SR_OE/'
+    if not os.path.exists(preffix):
+        os.makedirs(preffix)
     plt_file_name = preffix + 'acc.png'
     plt.plot(acc)
     plt.xlabel('Iterations')
@@ -56,7 +58,12 @@ def plot_loss(acc,train_loss,dev_loss):
     plt.close()
 
 def save_to_file(var, file):
+    preffix = '/tmp/SR_OE/'
     out_file = open(file, "wb")
+    pickle.dump(var, out_file)
+    out_file.close()
+
+    out_file = open(preffix + file, "wb")
     pickle.dump(var, out_file)
     out_file.close()
 
@@ -114,36 +121,36 @@ def greedy_decoding(pred):
 
 def accuracy_on_dev(model, dev):
     model.eval()
-    total_acc = 0
+    acc_on_batch = 0
     for k, (batch_input, batch_label) in enumerate(dev):
         pred, loss = apply(model, ctc_loss, batch_input, batch_label)
         dev_loss.append(loss.item())
         words = greedy_decoding(pred)
         gold_set = set([(idx_to_class[word.item()], word_index) for word_index, word in enumerate(batch_label)])
         pred_set = set([(word, word_index) for word_index, word in enumerate(words)])
-        total_acc += len(pred_set.intersection(gold_set)) / len(pred_set)
-    return total_acc / k
+        acc_on_batch += len(pred_set.intersection(gold_set)) / len(pred_set)
+    return acc_on_batch / k
 
 
 def train_model(model, train, dev):
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=1e-4)
-    ctc_loss = torch.nn.CTCLoss()
-    for epoch in range(100):
-        print("Epoch {}".format(epoch))
-        for k, (batch_input, batch_label) in enumerate(train):
-            model.train()
-            optimizer.zero_grad()
-            pred, loss = apply(model, ctc_loss, batch_input, batch_label)
-            loss.backward()
-            optimizer.step()
+    while loss_history[-1] < 0.1 or len(loss_history) == 0:
+        for epoch in range(100):
+            print("Epoch {}".format(epoch))
+            for k, (batch_input, batch_label) in enumerate(train):
+                model.train()
+                optimizer.zero_grad()
+                pred, loss = apply(model, ctc_loss, batch_input, batch_label)
+                loss.backward()
+                optimizer.step()
 
-        acc = accuracy_on_dev(model, dev)
-        print("acc is ")
-        print(acc)
-        total_acc.append(acc)
-        save_to_file([loss_history, dev_loss, total_acc], "history.pickle")
-        print("saved history to pickle")
-        plot_loss(total_acc,loss_history,dev_loss)
+            acc = accuracy_on_dev(model, dev)
+            print("acc is ")
+            print(acc)
+            total_acc.append(acc)
+            save_to_file([loss_history, dev_loss, total_acc], "history.pickle")
+            print("saved history to pickle")
+            plot_loss(total_acc,loss_history,dev_loss)
     return model
 
 
