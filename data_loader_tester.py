@@ -1,16 +1,17 @@
 from our_model import *
 import torch.nn as nn
 from our_model import get_seq_length
-
+import numpy as np
 from utils import *
-
+from cer import *
 ctc_loss = torch.nn.CTCLoss(blank=26)
 c2i = "abcdefghijklmnopqrstuvwxyz"
+PATH = "modelto_be_saved.pth"
 
 model = our_model().to(device)
 loss_history = []
 dev_loss = []
-total_acc = []
+error_rate = []
 
 
 def apply(model, ctc_loss, batch, labels):
@@ -63,33 +64,45 @@ def accuracy_on_dev(model, dev):
     for k, (batch_input, batch_label) in enumerate(dev):
         pred, loss = apply(model, ctc_loss, batch_input, batch_label)
         dev_loss.append(loss.item())
-        words = greedy_decoding(pred)
+        pred_words = greedy_decoding(pred)
+        gold_list = [idx_to_class[word.item()] for word in batch_label]
+
         gold_set = set([(idx_to_class[word.item()], word_index) for word_index, word in enumerate(batch_label)])
-        pred_set = set([(word, word_index) for word_index, word in enumerate(words)])
+        pred_set = set([(word, word_index) for word_index, word in enumerate(pred_words)])
         acc_on_batch += len(pred_set.intersection(gold_set)) / len(pred_set)
-    return acc_on_batch / k
+        total_cer = (np.array(list(map(lambda x: cer(x[0],x[1]),zip(pred_words,gold_list))))).mean()
+    return total_cer, acc_on_batch / len(batch_input)
+
+
+def save_model(model_to_save):
+    torch.save(model_to_save.state_dict(), PATH)
 
 
 def train_model(model, train, dev):
+    min_error_rate = 999
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=1e-4)
     while len(loss_history) == 0 or loss_history[-1] < 0.1:
         for epoch in range(100):
+            model.train()
             print("Epoch {}".format(epoch))
             for k, (batch_input, batch_label) in enumerate(train):
-                model.train()
                 optimizer.zero_grad()
                 pred, loss = apply(model, ctc_loss, batch_input, batch_label)
                 loss_history.append(loss.item())
                 loss.backward()
                 optimizer.step()
 
-            acc = accuracy_on_dev(model, dev)
+            char_error_rate, exact_acc = accuracy_on_dev(model, dev)
             print("acc is ")
-            print(acc)
-            total_acc.append(acc)
-            save_to_file([loss_history, dev_loss, total_acc], "history.pickle")
+            print(char_error_rate)
+            error_rate.append(char_error_rate)
+            save_to_file([loss_history, dev_loss, error_rate], "history.pickle")
             print("saved history to pickle")
-            plot_loss(total_acc, loss_history, dev_loss)
+            plot_loss(error_rate, loss_history, dev_loss,exact_acc)
+            if len(error_rate) > 20 and error_rate[-1] < min_error_rate:
+                min_error_rate =  error_rate[-1]
+                save_model(model)
+
     return model
 
 

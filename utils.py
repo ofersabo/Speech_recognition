@@ -8,15 +8,16 @@ train_dataset = GCommandLoader('./data/train/')
 valid_dataset = GCommandLoader('./data/valid/')
 idx_to_class = {v: k for k, v in train_dataset.class_to_idx.items()}
 
-def plot_loss(acc, train_loss, dev_loss):
+
+def plot_loss(error_rate, train_loss, dev_loss, exact_acc):
     preffix = '/tmp/SR_OE/'
     if not os.path.exists(preffix):
         os.makedirs(preffix)
-    plt_file_name = preffix + 'acc.png'
-    plt.plot(acc)
+    plt_file_name = preffix + 'error_rate.png'
+    plt.plot(error_rate)
     plt.xlabel('Iterations')
-    plt.ylabel('Accuracy')
-    plt.title('Accuracy')
+    plt.ylabel('error_rate')
+    plt.title('error_rate')
     plt.savefig(plt_file_name)
     plt.close()
 
@@ -33,6 +34,14 @@ def plot_loss(acc, train_loss, dev_loss):
     plt.xlabel('Iterations')
     plt.ylabel('Loss')
     plt.title('Loss')
+    plt.savefig(plt_file_name)
+    plt.close()
+
+    plt_file_name = preffix + 'exact_acc.png'
+    plt.plot(exact_acc)
+    plt.xlabel('Iterations')
+    plt.ylabel('acc')
+    plt.title('exact_acc')
     plt.savefig(plt_file_name)
     plt.close()
 
