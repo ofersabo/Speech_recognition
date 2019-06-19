@@ -53,7 +53,6 @@ def greedy_decoding(pred):
         word = "".join(word)
         # print(word)
         list_of_words.append(word)
-    print_to_file(list_of_words)
     return list_of_words
 
 
@@ -65,11 +64,11 @@ def accuracy_on_dev(model, dev):
         dev_loss.append(loss.item())
         pred_words = greedy_decoding(pred)
         gold_list = [idx_to_class[word.item()] for word in batch_label]
-
         gold_set = set([(idx_to_class[word.item()], word_index) for word_index, word in enumerate(batch_label)])
         pred_set = set([(word, word_index) for word_index, word in enumerate(pred_words)])
         acc_on_batch += len(pred_set.intersection(gold_set)) / len(pred_set)
         total_cer = (np.array(list(map(lambda x: cer(x[0], x[1]), zip(pred_words, gold_list))))).mean()
+    print_to_file(pred_words)
     return total_cer, acc_on_batch / len(batch_input)
 
 

@@ -15,7 +15,8 @@ def print_to_file(list_of_words):
         os.makedirs(preffix)
     words_file_name = preffix + 'word_list.txt'
     with open(words_file_name,"w") as f:
-        f.writelines(list_of_words)
+        for w in list_of_words:
+            f.writelines(w + "\n")
 
 
 def plot_loss(error_rate, train_loss, dev_loss, exact_acc):
