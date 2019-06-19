@@ -4,11 +4,12 @@ from our_model import get_seq_length
 import numpy as np
 from utils import *
 from cer import *
+
 ctc_loss = torch.nn.CTCLoss(blank=26)
 c2i = "abcdefghijklmnopqrstuvwxyz"
 PATH = "modelto_be_saved.pth"
 
-model = our_model().to(device)
+speech_model = our_model().to(device)
 loss_history = []
 dev_loss = []
 error_rate = []
@@ -32,22 +33,19 @@ def apply(model, ctc_loss, batch, labels):
     targets = torch.stack(targets)
     batch = batch.to(device)
     pred = model(torch.autograd.Variable(batch))
-    pred = pred.permute(1,0,2)
+    pred = pred.permute(1, 0, 2)
     loss = ctc_loss(pred, targets, lengths, target_lengths)
     return pred, loss
 
 
-criterion = nn.NLLLoss(size_average=False)
-
 
 def greedy_decoding(pred):
     '''
-
     :param pred: batch of probability shape (101,100,27)
     :return: word
     '''
     list_of_words = []
-    pred = pred.permute(1,0,2)
+    pred = pred.permute(1, 0, 2)
     for seq in pred:
         chars = torch.argmax(seq, dim=1).tolist()
         word = [chars[0]] + [c for index, c in enumerate(chars[1:], start=1) if c != chars[index - 1]]
@@ -55,6 +53,7 @@ def greedy_decoding(pred):
         word = "".join(word)
         # print(word)
         list_of_words.append(word)
+    print_to_file(list_of_words)
     return list_of_words
 
 
@@ -70,7 +69,7 @@ def accuracy_on_dev(model, dev):
         gold_set = set([(idx_to_class[word.item()], word_index) for word_index, word in enumerate(batch_label)])
         pred_set = set([(word, word_index) for word_index, word in enumerate(pred_words)])
         acc_on_batch += len(pred_set.intersection(gold_set)) / len(pred_set)
-        total_cer = (np.array(list(map(lambda x: cer(x[0],x[1]),zip(pred_words,gold_list))))).mean()
+        total_cer = (np.array(list(map(lambda x: cer(x[0], x[1]), zip(pred_words, gold_list))))).mean()
     return total_cer, acc_on_batch / len(batch_input)
 
 
@@ -98,12 +97,12 @@ def train_model(model, train, dev):
             error_rate.append(char_error_rate)
             save_to_file([loss_history, dev_loss, error_rate], "history.pickle")
             print("saved history to pickle")
-            plot_loss(error_rate, loss_history, dev_loss,exact_acc)
+            plot_loss(error_rate, loss_history, dev_loss, exact_acc)
             if len(error_rate) > 20 and error_rate[-1] < min_error_rate:
-                min_error_rate =  error_rate[-1]
+                min_error_rate = error_rate[-1]
                 save_model(model)
 
     return model
 
 
-train_model(model, train_loader, valid_loader)
+train_model(speech_model, train_loader, valid_loader)

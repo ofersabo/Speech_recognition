@@ -7,10 +7,18 @@ from matplotlib import pyplot as plt
 train_dataset = GCommandLoader('./data/train/')
 valid_dataset = GCommandLoader('./data/valid/')
 idx_to_class = {v: k for k, v in train_dataset.class_to_idx.items()}
+preffix = '/tmp/SR_OE/'
+
+
+def print_to_file(list_of_words):
+    if not os.path.exists(preffix):
+        os.makedirs(preffix)
+    words_file_name = preffix + 'word_list.txt'
+    with open(words_file_name,"w") as f:
+        f.writelines(list_of_words)
 
 
 def plot_loss(error_rate, train_loss, dev_loss, exact_acc):
-    preffix = '/tmp/SR_OE/'
     if not os.path.exists(preffix):
         os.makedirs(preffix)
     plt_file_name = preffix + 'error_rate.png'
