@@ -103,7 +103,7 @@ class GCommandLoader(data.Dataset):
     """
 
     def __init__(self, root, transform=None, target_transform=None, window_size=.02,
-                 window_stride=.01, window_type='hamming', normalize=True, max_len=101):
+                 window_stride=.01, window_type='hamming', normalize=False, max_len=101):
         classes, class_to_idx = find_classes(root)
         spects = make_dataset(root, class_to_idx)
         if len(spects) == 0:

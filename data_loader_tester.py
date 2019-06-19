@@ -1,78 +1,16 @@
 from our_model import *
-from gcommand_loader import GCommandLoader
-import torch
 import torch.nn as nn
-import matplotlib.pyplot as plt
 from our_model import get_seq_length
-import pickle
-import os
+
+from utils import *
+
 ctc_loss = torch.nn.CTCLoss(blank=26)
-train_dataset = GCommandLoader('./data/train/')
-valid_dataset = GCommandLoader('./data/valid/')
-idx_to_class = {v: k for k, v in train_dataset.class_to_idx.items()}
-
 c2i = "abcdefghijklmnopqrstuvwxyz"
-
-train_loader = torch.utils.data.DataLoader(
-    train_dataset, batch_size=100, shuffle=True,
-    num_workers=20, pin_memory=True, sampler=None)
-
-valid_loader = torch.utils.data.DataLoader(
-    valid_dataset, batch_size=100, shuffle=True,
-    num_workers=20, pin_memory=True, sampler=None)
-
-use_cuda = torch.cuda.is_available()
-device = torch.device("cuda:0" if use_cuda else "cpu")
 
 model = our_model().to(device)
 loss_history = []
 dev_loss = []
 total_acc = []
-
-def plot_loss(acc,train_loss,dev_loss):
-    preffix = '/tmp/SR_OE/'
-    if not os.path.exists(preffix):
-        os.makedirs(preffix)
-    plt_file_name = preffix + 'acc.png'
-    plt.plot(acc)
-    plt.xlabel('Iterations')
-    plt.ylabel('Accuracy')
-    plt.title('Accuracy')
-    plt.savefig(plt_file_name)
-    plt.close()
-
-    plt_file_name =  preffix + 'train_loss.png'
-    plt.plot(train_loss)
-    plt.xlabel('Iterations')
-    plt.ylabel('Loss')
-    plt.title('Loss')
-    plt.savefig(plt_file_name)
-    plt.close()
-
-    plt_file_name = preffix + 'dev_loss.png'
-    plt.plot(dev_loss)
-    plt.xlabel('Iterations')
-    plt.ylabel('Loss')
-    plt.title('Loss')
-    plt.savefig(plt_file_name)
-    plt.close()
-
-def save_to_file(var, file):
-    preffix = '/tmp/SR_OE/'
-    out_file = open(file, "wb")
-    pickle.dump(var, out_file)
-    out_file.close()
-
-    out_file = open(preffix + file, "wb")
-    pickle.dump(var, out_file)
-    out_file.close()
-
-
-def load_from_file(file):
-    in_file = open(file, "rb")
-    var = pickle.load(in_file)
-    in_file.close()
-    return var
 
 
 def apply(model, ctc_loss, batch, labels):
@@ -93,9 +31,8 @@ def apply(model, ctc_loss, batch, labels):
     targets = torch.stack(targets)
     batch = batch.to(device)
     pred = model(torch.autograd.Variable(batch))
-    pred = pred.view(rnn_seq_length, pred.size(0), number_of_classes)
+    pred = pred.permute(1,0,2)
     loss = ctc_loss(pred, targets, lengths, target_lengths)
-    loss_history.append(loss.item())
     return pred, loss
 
 
@@ -109,7 +46,8 @@ def greedy_decoding(pred):
     :return: word
     '''
     list_of_words = []
-    for seq in pred.view(pred.size(1), rnn_seq_length, number_of_classes):
+    pred = pred.permute(1,0,2)
+    for seq in pred:
         chars = torch.argmax(seq, dim=1).tolist()
         word = [chars[0]] + [c for index, c in enumerate(chars[1:], start=1) if c != chars[index - 1]]
         word = [c2i[i] for i in word if i != 26]
@@ -134,13 +72,14 @@ def accuracy_on_dev(model, dev):
 
 def train_model(model, train, dev):
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=1e-4)
-    while loss_history[-1] < 0.1 or len(loss_history) == 0:
+    while len(loss_history) == 0 or loss_history[-1] < 0.1:
         for epoch in range(100):
             print("Epoch {}".format(epoch))
             for k, (batch_input, batch_label) in enumerate(train):
                 model.train()
                 optimizer.zero_grad()
                 pred, loss = apply(model, ctc_loss, batch_input, batch_label)
+                loss_history.append(loss.item())
                 loss.backward()
                 optimizer.step()
 
@@ -150,7 +89,7 @@ def train_model(model, train, dev):
             total_acc.append(acc)
             save_to_file([loss_history, dev_loss, total_acc], "history.pickle")
             print("saved history to pickle")
-            plot_loss(total_acc,loss_history,dev_loss)
+            plot_loss(total_acc, loss_history, dev_loss)
     return model
 
 
