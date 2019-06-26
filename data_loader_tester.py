@@ -3,6 +3,7 @@ import torch.nn as nn
 import numpy as np
 from utils import *
 from cer import *
+from matplotlib import pyplot as plt
 
 ctc_loss = torch.nn.CTCLoss(blank=0,reduction='mean',zero_infinity=True)
 c2i = "_abcdefghijklmnopqrstuvwxyz"
@@ -124,12 +125,25 @@ def train_model(model, train, dev):
     return model
 
 
-# speech_model = Naive_Model().to(device)
-# speech_model.eval()
-# accuracy_on_dev(speech_model, train_subset,True)
-# print(speech_model._modules['h2o'].bias.data[0])
+def plot_raw_data(sample, word):
+    plt.title(word)
+    plt.imshow(sample.squeeze().numpy(), origin='lower')
+    plt.show()
 
-speech_model = our_model().to(device)
-speech_model.load_state_dict(torch.load(PATH, map_location=device))
-print(use_cuda)
-train_model(speech_model, train_subset, dev_subset)
+if __name__ == '__main__':
+
+    # speech_model = Naive_Model().to(device)
+    # speech_model.eval()
+    # accuracy_on_dev(speech_model, train_subset,True)
+    # print(speech_model._modules['h2o'].bias.data[0])
+
+    # speech_model = our_model().to(device)
+    # speech_model.load_state_dict(torch.load(PATH, map_location=device))
+    # print(use_cuda)
+    # train_model(speech_model, train_subset, dev_subset)
+
+    for k, (batch_input, batch_label, batch_path) in enumerate(train_subset):
+        for sample, label, path in zip(batch_input, batch_label, batch_path):
+            word = idx_to_class[label.item()] +"|" + path
+            plot_raw_data(sample, word)
+

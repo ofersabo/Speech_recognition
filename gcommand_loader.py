@@ -11,6 +11,16 @@ AUDIO_EXTENSIONS = [
     '.wav', '.WAV',
 ]
 
+def fnormalize(mfcc):
+    newarr =[]
+    for feature in range(len(mfcc)):
+        min = np.min(mfcc[feature])
+        max = np.max(mfcc[feature])
+        avg = np.mean(mfcc[feature])
+        std = np.std(mfcc[feature])
+        normed = (mfcc[feature] -avg) / std
+        newarr.append(normed)
+    return np.array(newarr)
 
 def is_audio_file(filename):
     return any(filename.endswith(extension) for extension in AUDIO_EXTENSIONS)
@@ -53,7 +63,16 @@ def spect_loader(path, window_size, window_stride, window, normalize, max_len=10
     spect, phase = librosa.magphase(D)
 
     # S = log(S+1)
-    spect = np.log1p(spect)
+    # spect = np.log1p(spect)
+
+
+
+    # MFCC
+
+    ws = int(sr*window_size)
+    st = int(sr*window_stride)
+    # spect = librosa.feature.mfcc(y=y, sr=sr,n_mfcc=5, n_fft=ws, hop_length=st)
+
 
     # make all spects with the same dims
     # TODO: change that in the future
@@ -136,7 +155,7 @@ class GCommandLoader(data.Dataset):
         if self.target_transform is not None:
             target = self.target_transform(target)
 
-        return spect, target
+        return spect, target, path
 
     def __len__(self):
         return len(self.spects)
