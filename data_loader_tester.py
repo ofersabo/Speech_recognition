@@ -54,7 +54,7 @@ def greedy_decoding(pred):
     return list_of_words, raw_words
 
 
-def accuracy_on_dev(model, dev, print_to_screen = False):
+def accuracy_on_dev(model, dev, epoch, print_to_screen = False):
     loss_per_batch = []
     model.eval()
     acc_on_dev = 0
@@ -71,7 +71,7 @@ def accuracy_on_dev(model, dev, print_to_screen = False):
         acc_on_dev += len(pred_set.intersection(gold_set)) / len(pred_set)
         total_cer.append((np.array(list(map(lambda x: cer(x[0], x[1]), zip(pred_words, gold_list))))).mean())
 
-    print_to_file(pred_words,gold_list, pred_raw_words, gold_list_files, print_to_screen)
+    print_to_file(pred_words,gold_list, pred_raw_words, gold_list_files, epoch, print_to_screen)
     return total_cer, acc_on_dev / len(batch_input) , loss_per_batch
 
 
@@ -101,7 +101,7 @@ def train_model(model, train, dev):
                 loss.backward()
                 optimizer.step()
 
-            char_error_rate_list_per_batch, exact_acc_mean_on_dev, loss_on_dev = accuracy_on_dev(model, dev,print_to_screen=False)
+            char_error_rate_list_per_batch, exact_acc_mean_on_dev, loss_on_dev = accuracy_on_dev(model, dev, epoch,print_to_screen=False)
             mean_error_rate = sum(char_error_rate_list_per_batch)/len(char_error_rate_list_per_batch)
             print("mean Error rate on last Epoch is ")
             print(mean_error_rate)

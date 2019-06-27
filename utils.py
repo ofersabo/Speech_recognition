@@ -18,10 +18,10 @@ filtered_dev = GCommandLoader('./data/filtered/dev/')
 preffix = '/tmp/SR_OE/'
 
 
-def print_to_file(list_of_words, gold_list, pred_raw, files, print_to_screen):
+def print_to_file(list_of_words, gold_list, pred_raw, files, epoch, print_to_screen):
     if not os.path.exists(preffix):
         os.makedirs(preffix)
-    words_file_name = preffix + 'word_list.txt'
+    words_file_name = preffix + 'word_list.'+str(epoch)+'.txt'
     with open(words_file_name, "w") as f:
         for i, gold in enumerate(gold_list):
             f.write("raw: %s\tpred: %s\tgold:%s\t file:%s\n" %
