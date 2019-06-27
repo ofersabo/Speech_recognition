@@ -18,16 +18,18 @@ filtered_dev = GCommandLoader('./data/filtered/dev/')
 preffix = '/tmp/SR_OE/'
 
 
-def print_to_file(list_of_words, gold_list,print_to_screen):
+def print_to_file(list_of_words, gold_list, pred_raw, files, print_to_screen):
     if not os.path.exists(preffix):
         os.makedirs(preffix)
     words_file_name = preffix + 'word_list.txt'
     with open(words_file_name, "w") as f:
-        for p, g in zip(list_of_words, gold_list):
-            f.write(p + "\t" + g + "\n")
+        for i, gold in enumerate(gold_list):
+            f.write("raw: %s\tpred: %s\tgold:%s\t file:%s\n" %
+                    (pred_raw[i], list_of_words[i], gold, files[i]))
     if print_to_screen:
-        for p, g in zip(list_of_words, gold_list):
-            print(p + "\t" + g)
+        for i, gold in enumerate(gold_list):
+            f.write("raw: %s\tpred: %s\tgold:%s\t file:%s\n" %
+                    (pred_raw[i], list_of_words[i], gold, files[i]))
 
 
 def plot_loss_inside_epoch(loss_history_per_batch, loss_on_dev):

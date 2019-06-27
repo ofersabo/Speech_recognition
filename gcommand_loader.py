@@ -155,7 +155,7 @@ class GCommandLoader(data.Dataset):
         if self.target_transform is not None:
             target = self.target_transform(target)
 
-        return spect, target, path
+        return (spect, target, path)
 
     def __len__(self):
         return len(self.spects)

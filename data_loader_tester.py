@@ -40,15 +40,18 @@ def greedy_decoding(pred):
     :return: word
     '''
     list_of_words = []
+    raw_words = []
     pred = pred.permute(1, 0, 2)
     for seq in pred:
         chars = torch.argmax(seq, dim=1).tolist()
+        raw_word = "".join([c2i[ch] for ch in chars])
         word = [chars[0]] + [c for index, c in enumerate(chars[1:], start=1) if c != chars[index - 1]]
         word = [c2i[i] for i in word if i != 0]
         word = "".join(word)
         # print(word)
         list_of_words.append(word)
-    return list_of_words
+        raw_words.append(raw_word)
+    return list_of_words, raw_words
 
 
 def accuracy_on_dev(model, dev, print_to_screen = False):
@@ -56,18 +59,19 @@ def accuracy_on_dev(model, dev, print_to_screen = False):
     model.eval()
     acc_on_dev = 0
     total_cer = []
-    for k, (batch_input, [batch_label,batch_path]) in enumerate(dev):
+    for k, (batch_input, batch_label,batch_path) in enumerate(dev):
         pred, loss = apply(model, ctc_loss, batch_input, batch_label)
         loss_per_batch.append(loss.item())
         # dev_loss_graph.append(np.array(loss_per_batch[-5:]).mean())
-        pred_words = greedy_decoding(pred)
+        pred_words, pred_raw_words = greedy_decoding(pred)
         gold_list = [idx_to_class[word.item()] for word in batch_label]
+        gold_list_files = [path for path in batch_path]
         gold_set = set([(idx_to_class[word.item()], word_index) for word_index, word in enumerate(batch_label)])
         pred_set = set([(word, word_index) for word_index, word in enumerate(pred_words)])
         acc_on_dev += len(pred_set.intersection(gold_set)) / len(pred_set)
         total_cer.append((np.array(list(map(lambda x: cer(x[0], x[1]), zip(pred_words, gold_list))))).mean())
 
-    print_to_file(pred_words,gold_list,print_to_screen)
+    print_to_file(pred_words,gold_list, pred_raw_words, gold_list_files, print_to_screen)
     return total_cer, acc_on_dev / len(batch_input) , loss_per_batch
 
 
@@ -88,7 +92,7 @@ def train_model(model, train, dev):
             model.train()
             print("Learning rate ", format(optimizer.param_groups[0]['lr']))
             print("Epoch {}".format(epoch))
-            for k, (batch_input, [batch_label, batch_path]) in enumerate(train):
+            for k, (batch_input, batch_label, batch_path) in enumerate(train):
                 pred, loss = apply(model, ctc_loss, batch_input, batch_label)
                 loss_history_per_batch.append(loss.item())
                 if k % 100 == 99:
@@ -139,7 +143,9 @@ if __name__ == '__main__':
     global idx_to_class
     idx_to_class = {v: k for k, v in train_subset.dataset.class_to_idx.items()}
     speech_model = our_model().to(device)
-    speech_model.load_state_dict(torch.load(PATH, map_location=device))
+
+    if os.path.isfile(PATH):
+        speech_model.load_state_dict(torch.load(PATH, map_location=device))
     print(use_cuda)
     train_model(speech_model, train_subset, dev_subset)
 
