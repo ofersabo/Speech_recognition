@@ -9,7 +9,12 @@ random.seed(1)
 
 train_dataset = GCommandLoader('./data/train/')
 valid_dataset = GCommandLoader('./data/valid/')
-idx_to_class = {v: k for k, v in train_dataset.class_to_idx.items()}
+
+filtered_train = GCommandLoader('./data/filtered/train/')
+filtered_dev = GCommandLoader('./data/filtered/dev/')
+
+
+
 preffix = '/tmp/SR_OE/'
 
 
@@ -88,12 +93,12 @@ valid_loader = torch.utils.data.DataLoader(
     valid_dataset, batch_size=100, shuffle=True,
     num_workers=20, pin_memory=True, sampler=None)
 
-train_indices =  random.sample(range(30000), 5000)
-test_indices = random.sample(range(6798), 500)
+# train_indices =  random.sample(range(30000), 5000)
+# test_indices = random.sample(range(6798), 500)
 # print(train_indices)
 # print(test_indices)
-train_subset = torch.utils.data.DataLoader(train_dataset, batch_size=100, shuffle=False, sampler=torch.utils.data.SubsetRandomSampler(train_indices))
-dev_subset = torch.utils.data.DataLoader(valid_dataset, batch_size=100, shuffle=False, sampler=torch.utils.data.SubsetRandomSampler(test_indices))
+train_subset = torch.utils.data.DataLoader(filtered_train, batch_size=100, shuffle=True, sampler=None)
+dev_subset = torch.utils.data.DataLoader(filtered_dev, batch_size=100, shuffle=True, sampler=None)
 
 use_cuda = torch.cuda.is_available()
 device = torch.device("cuda:1" if use_cuda else "cpu")

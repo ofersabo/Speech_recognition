@@ -56,7 +56,7 @@ def accuracy_on_dev(model, dev, print_to_screen = False):
     model.eval()
     acc_on_dev = 0
     total_cer = []
-    for k, (batch_input, batch_label) in enumerate(dev):
+    for k, (batch_input, [batch_label,batch_path]) in enumerate(dev):
         pred, loss = apply(model, ctc_loss, batch_input, batch_label)
         loss_per_batch.append(loss.item())
         # dev_loss_graph.append(np.array(loss_per_batch[-5:]).mean())
@@ -88,7 +88,7 @@ def train_model(model, train, dev):
             model.train()
             print("Learning rate ", format(optimizer.param_groups[0]['lr']))
             print("Epoch {}".format(epoch))
-            for k, (batch_input, batch_label) in enumerate(train):
+            for k, (batch_input, [batch_label, batch_path]) in enumerate(train):
                 pred, loss = apply(model, ctc_loss, batch_input, batch_label)
                 loss_history_per_batch.append(loss.item())
                 if k % 100 == 99:
@@ -136,14 +136,15 @@ if __name__ == '__main__':
     # speech_model.eval()
     # accuracy_on_dev(speech_model, train_subset,True)
     # print(speech_model._modules['h2o'].bias.data[0])
+    global idx_to_class
+    idx_to_class = {v: k for k, v in train_subset.dataset.class_to_idx.items()}
+    speech_model = our_model().to(device)
+    speech_model.load_state_dict(torch.load(PATH, map_location=device))
+    print(use_cuda)
+    train_model(speech_model, train_subset, dev_subset)
 
-    # speech_model = our_model().to(device)
-    # speech_model.load_state_dict(torch.load(PATH, map_location=device))
-    # print(use_cuda)
-    # train_model(speech_model, train_subset, dev_subset)
-
-    for k, (batch_input, batch_label, batch_path) in enumerate(train_subset):
-        for sample, label, path in zip(batch_input, batch_label, batch_path):
-            word = idx_to_class[label.item()] +"|" + path
-            plot_raw_data(sample, word)
-
+    # for k, (batch_input, batch_label, batch_path) in enumerate(train_subset):
+    #     for sample, label, path in zip(batch_input, batch_label, batch_path):
+    #         word = idx_to_class[label.item()] +"|" + path
+    #         plot_raw_data(sample, word)
+    #
