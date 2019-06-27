@@ -70,7 +70,6 @@ def plot_loss(train_loss, dev_loss, error_rate_graph):
 
 
 def save_to_file(var, file):
-    preffix = '/tmp/SR_OE/'
     out_file = open(file, "wb")
     pickle.dump(var, out_file)
     out_file.close()
