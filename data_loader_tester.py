@@ -146,7 +146,7 @@ if __name__ == '__main__':
     # print(speech_model._modules['h2o'].bias.data[0])
     temp_model = "model_2706.pth"
     global idx_to_class
-    idx_to_class = {v: k for k, v in train_subset.dataset.class_to_idx.items()}
+    idx_to_class = {v: k for k, v in debug_subset.dataset.class_to_idx.items()}
     speech_model = our_model().to(device)
     if os.path.isfile(PATH):
         speech_model.load_state_dict(torch.load(PATH, map_location=device))
@@ -156,8 +156,8 @@ if __name__ == '__main__':
 
     train_model(speech_model, train_subset, dev_subset)
 
-    # for k, (batch_input, batch_label, batch_path) in enumerate(train_subset):
+    # for k, (batch_input, batch_label, batch_path) in enumerate(debug_subset):
     #     for sample, label, path in zip(batch_input, batch_label, batch_path):
-    #         word = idx_to_class[label.item()] +"|" + path
+    #         word = idx_to_class[label.item()] +"|mel|" + path
     #         plot_raw_data(sample, word)
-    #
+

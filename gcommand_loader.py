@@ -63,15 +63,19 @@ def spect_loader(path, window_size, window_stride, window, normalize, max_len=10
     spect, phase = librosa.magphase(D)
 
     # S = log(S+1)
-    # spect = np.log1p(spect)
+    spect = np.log1p(spect)
+
+    #mel
+    st = int(sr*window_stride)
+    D = librosa.feature.melspectrogram(y, n_fft=n_fft, sr=sr, hop_length=st, n_mels=160)
+    spect, phase = librosa.magphase(D)
 
 
-
+    #
     # MFCC
 
-    ws = int(sr*window_size)
     st = int(sr*window_stride)
-    # spect = librosa.feature.mfcc(y=y, sr=sr,n_mfcc=5, n_fft=ws, hop_length=st)
+    # spect = librosa.feature.mfcc(y=y, sr=sr,n_mfcc=5, n_fft=n_fft, hop_length=st)
 
 
     # make all spects with the same dims

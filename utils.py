@@ -13,7 +13,9 @@ valid_dataset = GCommandLoader('./data/valid/')
 filtered_train = GCommandLoader('./data/filtered/train/')
 filtered_dev = GCommandLoader('./data/filtered/dev/')
 
-batch_size = 100
+
+debug_data = GCommandLoader('./data/debug/')
+
 
 preffix = '/tmp/SR_OE/'
 
@@ -101,6 +103,10 @@ valid_loader = torch.utils.data.DataLoader(
 # print(test_indices)
 train_subset = torch.utils.data.DataLoader(filtered_train, batch_size=batch_size, shuffle=True, sampler=None)
 dev_subset = torch.utils.data.DataLoader(filtered_dev, batch_size=batch_size, shuffle=True, sampler=None)
+
+debug_subset = torch.utils.data.DataLoader(debug_data, batch_size=100, shuffle=True, sampler=None)
+
+
 
 use_cuda = torch.cuda.is_available()
 device = torch.device("cuda:1" if use_cuda else "cpu")
