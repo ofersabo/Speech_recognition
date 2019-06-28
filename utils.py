@@ -13,8 +13,8 @@ valid_dataset = GCommandLoader('./data/valid/')
 filtered_train = GCommandLoader('./data/filtered/train/')
 filtered_dev = GCommandLoader('./data/filtered/dev/')
 
-
-debug_data = GCommandLoader('./data/debug/')
+batch_size = 100
+# debug_data = GCommandLoader('./data/debug/')
 
 
 preffix = '/tmp/SR_OE/'
@@ -104,7 +104,7 @@ valid_loader = torch.utils.data.DataLoader(
 train_subset = torch.utils.data.DataLoader(filtered_train, batch_size=batch_size, shuffle=True, sampler=None)
 dev_subset = torch.utils.data.DataLoader(filtered_dev, batch_size=batch_size, shuffle=True, sampler=None)
 
-debug_subset = torch.utils.data.DataLoader(debug_data, batch_size=100, shuffle=True, sampler=None)
+# debug_subset = torch.utils.data.DataLoader(debug_data, batch_size=100, shuffle=True, sampler=None)
 
 
 
