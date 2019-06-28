@@ -146,7 +146,7 @@ if __name__ == '__main__':
     # print(speech_model._modules['h2o'].bias.data[0])
     temp_model = "model_2706.pth"
     global idx_to_class
-    idx_to_class = {v: k for k, v in debug_subset.dataset.class_to_idx.items()}
+    idx_to_class = {v: k for k, v in train_subset.dataset.class_to_idx.items()}
     speech_model = our_model().to(device)
     if os.path.isfile(PATH):
         speech_model.load_state_dict(torch.load(PATH, map_location=device))
