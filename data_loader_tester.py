@@ -140,13 +140,15 @@ if __name__ == '__main__':
     # speech_model.eval()
     # accuracy_on_dev(speech_model, train_subset,True)
     # print(speech_model._modules['h2o'].bias.data[0])
+    temp_model = "model_2706.pth"
     global idx_to_class
     idx_to_class = {v: k for k, v in train_subset.dataset.class_to_idx.items()}
     speech_model = our_model().to(device)
-
     if os.path.isfile(PATH):
         speech_model.load_state_dict(torch.load(PATH, map_location=device))
+
     print(use_cuda)
+    accuracy_on_dev(speech_model,dev_subset,True)
     train_model(speech_model, train_subset, dev_subset)
 
     # for k, (batch_input, batch_label, batch_path) in enumerate(train_subset):
