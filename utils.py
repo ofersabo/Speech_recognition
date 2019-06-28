@@ -13,22 +13,23 @@ valid_dataset = GCommandLoader('./data/valid/')
 filtered_train = GCommandLoader('./data/filtered/train/')
 filtered_dev = GCommandLoader('./data/filtered/dev/')
 
-
+batch_size = 100
 
 preffix = '/tmp/SR_OE/'
 
 
-def print_to_file(list_of_words, gold_list, pred_raw, files, epoch, print_to_screen):
+def print_to_file(list_of_words, gold_list, pred_raw, files, epoch, print_to_screen,file_name = 'word_list.'):
     if not os.path.exists(preffix):
         os.makedirs(preffix)
-    words_file_name = preffix + 'word_list.'+str(epoch)+'.txt'
+    words_file_name = preffix + file_name +str(epoch)+'.txt'
     with open(words_file_name, "w") as f:
         for i, gold in enumerate(gold_list):
             f.write("raw: %s\tpred: %s\tgold:%s\t file:%s\n" %
                     (pred_raw[i], list_of_words[i], gold, files[i]))
+
     if print_to_screen:
         for i, gold in enumerate(gold_list):
-            f.write("raw: %s\tpred: %s\tgold:%s\t file:%s\n" %
+            print("raw: %s\tpred: %s\tgold:%s\t file:%s\n" %
                     (pred_raw[i], list_of_words[i], gold, files[i]))
 
 
@@ -88,18 +89,18 @@ def load_from_file(file):
 
 
 train_loader = torch.utils.data.DataLoader(
-    train_dataset, batch_size=100, shuffle=True,
+    train_dataset, batch_size=batch_size, shuffle=True,
     num_workers=20, pin_memory=True, sampler=None)
 valid_loader = torch.utils.data.DataLoader(
-    valid_dataset, batch_size=100, shuffle=True,
+    valid_dataset, batch_size=batch_size, shuffle=True,
     num_workers=20, pin_memory=True, sampler=None)
 
 # train_indices =  random.sample(range(30000), 5000)
 # test_indices = random.sample(range(6798), 500)
 # print(train_indices)
 # print(test_indices)
-train_subset = torch.utils.data.DataLoader(filtered_train, batch_size=100, shuffle=True, sampler=None)
-dev_subset = torch.utils.data.DataLoader(filtered_dev, batch_size=100, shuffle=True, sampler=None)
+train_subset = torch.utils.data.DataLoader(filtered_train, batch_size=batch_size, shuffle=True, sampler=None)
+dev_subset = torch.utils.data.DataLoader(filtered_dev, batch_size=batch_size, shuffle=True, sampler=None)
 
 use_cuda = torch.cuda.is_available()
 device = torch.device("cuda:1" if use_cuda else "cpu")

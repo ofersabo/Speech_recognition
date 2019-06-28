@@ -54,7 +54,7 @@ def greedy_decoding(pred):
     return list_of_words, raw_words
 
 
-def accuracy_on_dev(model, dev, epoch, print_to_screen = False):
+def accuracy_on_dev(model, dev, epoch, print_to_screen = False,file_name = "dev_word_list"):
     loss_per_batch = []
     model.eval()
     acc_on_dev = 0
@@ -70,8 +70,10 @@ def accuracy_on_dev(model, dev, epoch, print_to_screen = False):
         pred_set = set([(word, word_index) for word_index, word in enumerate(pred_words)])
         acc_on_dev += len(pred_set.intersection(gold_set)) / len(pred_set)
         total_cer.append((np.array(list(map(lambda x: cer(x[0], x[1]), zip(pred_words, gold_list))))).mean())
+        if "train" in file_name:
+            break
 
-    print_to_file(pred_words,gold_list, pred_raw_words, gold_list_files, epoch, print_to_screen)
+    print_to_file(pred_words,gold_list, pred_raw_words, gold_list_files, epoch, print_to_screen,file_name=file_name)
     return total_cer, acc_on_dev / len(batch_input) , loss_per_batch
 
 
@@ -90,7 +92,6 @@ def train_model(model, train, dev):
         for epoch in range(5000):
             loss_history_per_batch = []
             model.train()
-            print("Learning rate ", format(optimizer.param_groups[0]['lr']))
             print("Epoch {}".format(epoch))
             for k, (batch_input, batch_label, batch_path) in enumerate(train):
                 pred, loss = apply(model, ctc_loss, batch_input, batch_label)
@@ -102,6 +103,9 @@ def train_model(model, train, dev):
                 optimizer.step()
 
             char_error_rate_list_per_batch, exact_acc_mean_on_dev, loss_on_dev = accuracy_on_dev(model, dev, epoch,print_to_screen=False)
+
+            accuracy_on_dev(model, train , epoch,print_to_screen=False, file_name="train_word_list")
+
             mean_error_rate = sum(char_error_rate_list_per_batch)/len(char_error_rate_list_per_batch)
             print("mean Error rate on last Epoch is ")
             print(mean_error_rate)
@@ -147,8 +151,9 @@ if __name__ == '__main__':
     if os.path.isfile(PATH):
         speech_model.load_state_dict(torch.load(PATH, map_location=device))
 
+
     print(use_cuda)
-    accuracy_on_dev(speech_model,dev_subset,True)
+
     train_model(speech_model, train_subset, dev_subset)
 
     # for k, (batch_input, batch_label, batch_path) in enumerate(train_subset):
