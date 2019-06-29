@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch
 import torch.nn.functional as F
+import math
 
 torch.manual_seed(123)
 
@@ -27,10 +28,11 @@ class our_model(nn.Module):
     def __init__(self):
         super(our_model, self).__init__()
         self.conv1 = nn.Conv2d(1, first_out_channel, filter_one_size, stride=first_filter_stride)
+        self.pool1 = nn.MaxPool2d(2, 2)
         nn.init.xavier_uniform_(self.conv1.weight)
         self.conv1_bn = nn.BatchNorm2d(first_out_channel)
         self.conv2 = nn.Conv2d(first_out_channel, second_filter_channels, second_filter_size,
-                               stride=first_filter_stride)
+                               stride=second_filter_stride)
         nn.init.xavier_uniform_(self.conv2.weight)
         self.conv2_bn = nn.BatchNorm2d(second_filter_channels)
 
@@ -42,7 +44,7 @@ class our_model(nn.Module):
         self.softmax = nn.LogSoftmax(dim=1)
 
     def forward(self, tensor_input):
-        x = self.conv1(tensor_input)
+        x = self.pool1(self.conv1(tensor_input))
         x = F.relu(x)
         x = self.conv1_bn(x)
         x = F.relu(self.conv2(x))
@@ -61,7 +63,7 @@ class our_model(nn.Module):
     def get_seq_length(self,input_length):
         # in_to_second_conv = ((input_length - filter_one_size[1]) // first_filter_stride + 1)
         # return ((in_to_second_conv - second_filter_size[1]) // second_filter_stride + 1)
-        return 21
+        return input_to_bias_width
 
 hidden_size = 128
 input_size = 161
@@ -74,10 +76,10 @@ first_filter_stride = (2,2)
 
 second_filter_size = (4, 5)
 second_filter_channels = 32
-second_filter_stride = (2,2)
+second_filter_stride = (1,1)
 
-input_to_second_conv_time = ((seq_input_length - filter_one_size[1]) // first_filter_stride[1] + 1)
-input_to_second_conv_freq = ((input_size - filter_one_size[0]) // first_filter_stride[0] + 1)
+input_to_second_conv_time = math.floor(((seq_input_length - filter_one_size[1]) // first_filter_stride[1] + 1)/2)
+input_to_second_conv_freq = math.floor(((input_size - filter_one_size[0]) // first_filter_stride[0] + 1)/2)
 
 input_to_third_conv_time = ((input_to_second_conv_time - second_filter_size[1]) // second_filter_stride[1] + 1)
 input_to_third_conv_freq = ((input_to_second_conv_freq - second_filter_size[0]) // second_filter_stride[0] + 1)
