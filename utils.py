@@ -21,7 +21,7 @@ curr_time = strftime("%Y-%m-%d_%H%M%S", gmtime())
 batch_size = 50
 cuda_device = "cuda:2"
 preffix = '/tmp/SR_OE' + curr_time + '/'
-PATH_to_model = "model_to_be_saved_" + curr_time + ".pth"
+PATH_to_model = "model_to_be_saved_" + cuda_device + ".pth"
 
 
 def print_test_file(pred_words, word_files, file_name):
