@@ -26,7 +26,7 @@ class SR_model(nn.Module):
 
     def forward(self, tensor_input):
         x = self.conv1(tensor_input)
-        # x = self.dropout(x)
+        x = self.dropout(x)
         x = self.pooling2d(x)
         x = self.conv1_bn(x)
         x = F.relu(x)
