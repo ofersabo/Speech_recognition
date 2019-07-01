@@ -7,6 +7,17 @@ import numpy as np
 import torch
 import torch.utils.data as data
 
+
+
+MFCC = "MFCC"
+MEL = "MEL"
+STFT_LOG1 = "STFT_LOG1"
+STFT = "STFT"
+
+
+
+FEATURES = STFT_LOG1
+
 AUDIO_EXTENSIONS = [
     '.wav', '.WAV',
 ]
@@ -33,7 +44,7 @@ def find_classes(dir):
     return classes, class_to_idx
 
 
-def make_dataset(dir, class_to_idx):
+def make_dataset(caller, dir, class_to_idx):
     spects = []
     dir = os.path.expanduser(dir)
     for target in sorted(os.listdir(dir)):
@@ -50,6 +61,17 @@ def make_dataset(dir, class_to_idx):
     return spects
 
 
+def make_test_dataset(caller, dir, class_to_idx):
+    spects = []
+    root, _, fnames = sorted(os.walk(dir))
+    for fname in sorted(fnames):
+        if is_audio_file(fname):
+            path = os.path.join(root, fname)
+            item = (path, None)
+            spects.append(item)
+    return spects
+
+
 def spect_loader(path, window_size, window_stride, window, normalize, max_len=101):
     y, sr = sf.read(path)
     # n_fft = 4096
@@ -57,26 +79,7 @@ def spect_loader(path, window_size, window_stride, window, normalize, max_len=10
     win_length = n_fft
     hop_length = int(sr * window_stride)
 
-    # STFT
-    D = librosa.stft(y, n_fft=n_fft, hop_length=hop_length,
-                     win_length=win_length, window=window)
-    spect, phase = librosa.magphase(D)
-
-    # S = log(S+1)
-    spect = np.log1p(spect)
-
-    #mel
-    st = int(sr*window_stride)
-    D = librosa.feature.melspectrogram(y, n_fft=n_fft, sr=sr, hop_length=st, n_mels=160)
-    spect, phase = librosa.magphase(D)
-
-
-    #
-    # MFCC
-
-    st = int(sr*window_stride)
-    # spect = librosa.feature.mfcc(y=y, sr=sr,n_mfcc=5, n_fft=n_fft, hop_length=st)
-
+    spect = get_features(sr, hop_length, n_fft, win_length, window, y)
 
     # make all spects with the same dims
     # TODO: change that in the future
@@ -99,7 +102,45 @@ def spect_loader(path, window_size, window_stride, window, normalize, max_len=10
     return spect
 
 
+def stft_get_features(sr, hop_length, n_fft, win_length, window, y):
+    # STFT
+    D = librosa.stft(y, n_fft=n_fft, hop_length=hop_length,
+                     win_length=win_length, window=window)
+    spect, phase = librosa.magphase(D)
+    # S = log(S+1)
+    return spect
+
+
+def stft_log1_get_features(sr, hop_length, n_fft, win_length, window, y):
+    # STFT
+    D = librosa.stft(y, n_fft=n_fft, hop_length=hop_length,
+                     win_length=win_length, window=window)
+    spect, phase = librosa.magphase(D)
+    # S = log(S+1)
+    spect = np.log1p(spect)
+    return spect
+
+
+def mel_get_features(sr, hop_length, n_fft, win_length, window, y):
+    D = librosa.feature.melspectrogram(y, n_fft=n_fft, sr=sr, hop_length=hop_length, n_mels=160)
+    spect, phase = librosa.magphase(D)
+    return spect
+
+def mfcc_get_features(sr, hop_length, n_fft, win_length, window, y):
+    spect = librosa.feature.mfcc(y=y, sr=sr,n_mfcc=20, n_fft=n_fft, hop_length=hop_length)
+    return spect
+
+feature_functions = {MFCC: mfcc_get_features,
+                     MEL: mel_get_features,
+                     STFT: stft_get_features,
+                     STFT_LOG1: stft_log1_get_features}
+
+def get_features(sr, hop_length, n_fft, win_length, window, y):
+    return feature_functions[FEATURES](sr, hop_length, n_fft, win_length, window, y)
+
+
 class GCommandLoader(data.Dataset):
+    make_dataset_func =make_dataset
     """A google command data set loader where the wavs are arranged in this way: ::
         root/one/xxx.wav
         root/one/xxy.wav
@@ -128,7 +169,7 @@ class GCommandLoader(data.Dataset):
     def __init__(self, root, transform=None, target_transform=None, window_size=.02,
                  window_stride=.01, window_type='hamming', normalize=False, max_len=101):
         classes, class_to_idx = find_classes(root)
-        spects = make_dataset(root, class_to_idx)
+        spects = self.make_dataset_func(root, class_to_idx)
         if len(spects) == 0:
             raise (RuntimeError("Found 0 sound files in subfolders of: " + root + "Supported audio file extensions are: " + ",".join(AUDIO_EXTENSIONS)))
 
@@ -163,3 +204,12 @@ class GCommandLoader(data.Dataset):
 
     def __len__(self):
         return len(self.spects)
+
+class GTestCommandLoader(GCommandLoader):
+    make_dataset_func = make_test_dataset
+    def __init__(self, root, transform=None, target_transform=None, window_size=.02,
+                 window_stride=.01, window_type='hamming', normalize=False, max_len=101):
+        GCommandLoader.__init__(self, root, transform=None, target_transform=None, window_size=.02,
+                                window_stride=.01, window_type='hamming', normalize=False, max_len=101)
+
+

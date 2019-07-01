@@ -74,6 +74,25 @@ def accuracy_on_dev(model, dev, epoch, print_to_screen = False,file_name = "dev_
     return total_cer, acc_on_dev / len(batch_input) , loss_per_batch
 
 
+
+
+def predict_test(model, testdata, file_name = "dev_word_list"):
+    model.eval()
+    all_pred_words = []
+    all_word_files = []
+    for k, (batch_input, batch_label,batch_path) in enumerate(testdata):
+        batch = batch.to(device)
+        pred = model(batch)
+        pred = pred.permute(1, 0, 2).to(device)
+        pred_words, pred_raw_words = greedy_decoding(pred)
+        word_files = [path for path in batch_path]
+        all_pred_words.extend(pred_words)
+        all_word_files.extend(word_files)
+
+    print_test_file(all_pred_words, all_word_files,file_name=file_name)
+
+
+
 def save_model(model_to_save):
     print("saved model")
     torch.save(model_to_save.state_dict(), PATH_to_model)
@@ -149,15 +168,23 @@ if __name__ == '__main__':
 
     speech_model.load_state_dict(torch.load(temp_path, map_location=device))
     speech_model.eval()
+
+
+
+    predict_test(speech_model,test_loader,"test y")
+    exit()
+
     print(use_cuda)
     x = accuracy_on_dev(speech_model,dev_data,0,True)
     print(np.array(x[0]).mean())
 
-    exit()
+
     train_model(speech_model, train_data, dev_data)
 
+    #
+    # idx_to_class = {v: k for k, v in debug_subset.dataset.class_to_idx.items()}
     # for k, (batch_input, batch_label, batch_path) in enumerate(debug_subset):
     #     for sample, label, path in zip(batch_input, batch_label, batch_path):
-    #         word = idx_to_class[label.item()] +"|mel|" + path
+    #         word = idx_to_class[label.item()] +"|"+ FEATURES +"|" + path
     #         plot_raw_data(sample, word)
 

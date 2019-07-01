@@ -1,6 +1,6 @@
 import os
 import pickle
-from gcommand_loader import GCommandLoader
+from gcommand_loader import GCommandLoader, GTestCommandLoader, FEATURES
 import torch
 from matplotlib import pyplot as plt
 import random
@@ -13,6 +13,7 @@ valid_dataset = GCommandLoader('./data/valid/')
 filtered_train = GCommandLoader('./data/filtered/train/')
 filtered_dev = GCommandLoader('./data/filtered/dev/')
 
+test_dataset = GTestCommandLoader('./data/test/')
 
 preffix = '/tmp/SR_OE/'
 batch_size = 50
@@ -20,6 +21,16 @@ batch_size = 50
 cuda_device = "cuda:2"
 preffix = '/tmp/SR_OE' + cuda_device + '/'
 PATH_to_model = "model_to_be_saved_" + cuda_device + ".pth"
+
+
+def print_test_file(pred_words, word_files, file_name):
+    if not os.path.exists(preffix):
+            os.makedirs(preffix)
+    test_file_name = preffix + file_name
+    with open(test_file_name, "w") as f:
+        for i in range(len(pred_words)):
+            f.write("%s, %s" % (word_files[i], pred_words[i]))
+
 
 def print_to_file(list_of_words, gold_list, pred_raw, files, epoch, print_to_screen,file_name = 'word_list.'):
     if not os.path.exists(preffix):
@@ -99,10 +110,21 @@ train_loader = torch.utils.data.DataLoader(
 valid_loader = torch.utils.data.DataLoader(
     valid_dataset, batch_size=batch_size, shuffle=True,
     num_workers=20, pin_memory=True, sampler=None)
+test_loader = torch.utils.data.DataLoader(
+    test_dataset, batch_size=batch_size, shuffle=False,
+    num_workers=20, pin_memory=True, sampler=None)
+
+
 
 
 train_subset = torch.utils.data.DataLoader(filtered_train, batch_size=batch_size, shuffle=True, sampler=None)
 dev_subset = torch.utils.data.DataLoader(filtered_dev, batch_size=batch_size, shuffle=True, sampler=None)
+
+
+#
+# debug_data = GCommandLoader('./data/debug/')
+# debug_subset = torch.utils.data.DataLoader(debug_data, batch_size=100, shuffle=True, sampler=None)
+
 
 
 use_cuda = torch.cuda.is_available()
