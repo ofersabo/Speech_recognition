@@ -1,37 +1,23 @@
 import os
 import os.path
 
-import soundfile as sf
 import librosa
 import numpy as np
+import soundfile as sf
 import torch
 import torch.utils.data as data
-
-
 
 MFCC = "MFCC"
 MEL = "MEL"
 STFT_LOG1 = "STFT_LOG1"
 STFT = "STFT"
 
-
-
-FEATURES = STFT_LOG1
-
 AUDIO_EXTENSIONS = [
     '.wav', '.WAV',
 ]
 
-def fnormalize(mfcc):
-    newarr =[]
-    for feature in range(len(mfcc)):
-        min = np.min(mfcc[feature])
-        max = np.max(mfcc[feature])
-        avg = np.mean(mfcc[feature])
-        std = np.std(mfcc[feature])
-        normed = (mfcc[feature] -avg) / std
-        newarr.append(normed)
-    return np.array(newarr)
+
+FEATURES = STFT_LOG1
 
 def is_audio_file(filename):
     return any(filename.endswith(extension) for extension in AUDIO_EXTENSIONS)
