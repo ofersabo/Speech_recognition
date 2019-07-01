@@ -1,6 +1,7 @@
 import os
 import pickle
 import random
+from time import gmtime, strftime
 
 import torch
 from matplotlib import pyplot as plt
@@ -14,10 +15,13 @@ valid_dataset = GCommandLoader('./data/valid/')
 test_dataset = GTestCommandLoader('./data/test/')
 
 
+curr_time = strftime("%Y-%m-%d_%H%M%S", gmtime())
+
+
 batch_size = 50
 cuda_device = "cuda:2"
-preffix = '/tmp/SR_OE' + cuda_device + '/'
-PATH_to_model = "sr_model_to_be_saved_" + cuda_device + ".pth"
+preffix = '/tmp/SR_OE' + curr_time + '/'
+PATH_to_model = "model_to_be_saved_" + curr_time + ".pth"
 
 
 def print_test_file(pred_words, word_files, file_name):
