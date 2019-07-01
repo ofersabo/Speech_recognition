@@ -1,3 +1,5 @@
+import ntpath
+
 from our_model import *
 import torch.nn as nn
 import numpy as np
@@ -80,12 +82,12 @@ def predict_test(model, testdata, file_name = "dev_word_list"):
     model.eval()
     all_pred_words = []
     all_word_files = []
-    for k, (batch_input, batch_label,batch_path) in enumerate(testdata):
-        batch = batch.to(device)
+    for k, (batch_input, batch_path) in enumerate(testdata):
+        batch = batch_input.to(device)
         pred = model(batch)
         pred = pred.permute(1, 0, 2).to(device)
         pred_words, pred_raw_words = greedy_decoding(pred)
-        word_files = [path for path in batch_path]
+        word_files = [ntpath.basename(path) for path in batch_path]
         all_pred_words.extend(pred_words)
         all_word_files.extend(word_files)
 
@@ -171,7 +173,7 @@ if __name__ == '__main__':
 
 
 
-    predict_test(speech_model,test_loader,"test y")
+    predict_test(speech_model,test_loader,"test_y")
     exit()
 
     print(use_cuda)

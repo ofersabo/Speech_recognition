@@ -63,10 +63,10 @@ def make_dataset(caller, dir, class_to_idx):
 
 def make_test_dataset(caller, dir, class_to_idx):
     spects = []
-    root, _, fnames = sorted(os.walk(dir))
+    fnames = os.listdir(dir)
     for fname in sorted(fnames):
         if is_audio_file(fname):
-            path = os.path.join(root, fname)
+            path = os.path.join(dir, fname)
             item = (path, None)
             spects.append(item)
     return spects
@@ -213,3 +213,12 @@ class GTestCommandLoader(GCommandLoader):
                                 window_stride=.01, window_type='hamming', normalize=False, max_len=101)
 
 
+    def __getitem__(self, index):
+        path, target = self.spects[index]
+        spect = self.loader(path, self.window_size, self.window_stride, self.window_type, self.normalize, self.max_len)
+        if self.transform is not None:
+            spect = self.transform(spect)
+        if self.target_transform is not None:
+            target = self.target_transform(target)
+
+        return (spect, path)

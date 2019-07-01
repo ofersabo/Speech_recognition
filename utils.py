@@ -29,7 +29,7 @@ def print_test_file(pred_words, word_files, file_name):
     test_file_name = preffix + file_name
     with open(test_file_name, "w") as f:
         for i in range(len(pred_words)):
-            f.write("%s, %s" % (word_files[i], pred_words[i]))
+            f.write("%s, %s\n" % (word_files[i], pred_words[i]))
 
 
 def print_to_file(list_of_words, gold_list, pred_raw, files, epoch, print_to_screen,file_name = 'word_list.'):
