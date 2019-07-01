@@ -13,17 +13,18 @@ valid_dataset = GCommandLoader('./data/valid/')
 filtered_train = GCommandLoader('./data/filtered/train/')
 filtered_dev = GCommandLoader('./data/filtered/dev/')
 
-batch_size = 100
-# debug_data = GCommandLoader('./data/debug/')
-
 
 preffix = '/tmp/SR_OE/'
+batch_size = 50
 
+cuda_device = "cuda:2"
+preffix = '/tmp/SR_OE' + cuda_device + '/'
+PATH_to_model = "model_to_be_saved_" + cuda_device + ".pth"
 
 def print_to_file(list_of_words, gold_list, pred_raw, files, epoch, print_to_screen,file_name = 'word_list.'):
     if not os.path.exists(preffix):
         os.makedirs(preffix)
-    words_file_name = preffix + file_name +str(epoch)+'.txt'
+    words_file_name = preffix + file_name + str(epoch)+'.txt'
     with open(words_file_name, "w") as f:
         for i, gold in enumerate(gold_list):
             f.write("raw: %s\tpred: %s\tgold:%s\t file:%s\n" %
@@ -49,17 +50,19 @@ def plot_loss_inside_epoch(loss_history_per_batch, loss_on_dev):
     plt.savefig(plt_file_name)
     plt.close()
 
-
-def plot_loss(train_loss, dev_loss, error_rate_graph):
-    if not os.path.exists(preffix):
-        os.makedirs(preffix)
-    plt_file_name = preffix + 'error_rate.png'
-    plt.plot(error_rate_graph)
+def plot_error_rate_graph(error_rate,file_name =  'error_rate.png'):
+    plt_file_name = preffix + file_name
+    plt.plot(error_rate)
     plt.xlabel('Iterations')
     plt.ylabel('error_rate')
     plt.title('error_rate')
     plt.savefig(plt_file_name)
     plt.close()
+
+def plot_loss(train_loss, dev_loss, error_rate_graph):
+    if not os.path.exists(preffix):
+        os.makedirs(preffix)
+    plot_error_rate_graph(error_rate_graph)
 
     plt_file_name = preffix + 'train_loss.png'
     plt.plot(train_loss, 'r', label='train')
@@ -97,17 +100,11 @@ valid_loader = torch.utils.data.DataLoader(
     valid_dataset, batch_size=batch_size, shuffle=True,
     num_workers=20, pin_memory=True, sampler=None)
 
-# train_indices =  random.sample(range(30000), 5000)
-# test_indices = random.sample(range(6798), 500)
-# print(train_indices)
-# print(test_indices)
+
 train_subset = torch.utils.data.DataLoader(filtered_train, batch_size=batch_size, shuffle=True, sampler=None)
 dev_subset = torch.utils.data.DataLoader(filtered_dev, batch_size=batch_size, shuffle=True, sampler=None)
 
-# debug_subset = torch.utils.data.DataLoader(debug_data, batch_size=100, shuffle=True, sampler=None)
-
-
 
 use_cuda = torch.cuda.is_available()
-device = torch.device("cuda:1" if use_cuda else "cpu")
+device = torch.device(cuda_device if use_cuda else "cpu")
 # device = torch.device("cuda:2")

@@ -11,7 +11,7 @@ class Naive_Model(nn.Module):
         super(Naive_Model, self).__init__()
         # self.device = device
         self.h2o = nn.Linear(input_size, number_of_classes)
-        self.softmax = nn.LogSoftmax(dim=1)
+        self.softmax = nn.LogSoftmax(dim=2)
 
     def forward(self, tensor_input):
         x_squeeze = torch.squeeze(tensor_input, 1)
@@ -37,17 +37,21 @@ class our_model(nn.Module):
         self.conv2_bn = nn.BatchNorm2d(second_filter_channels)
 
         self.conv3 = nn.Conv2d(second_filter_channels, third_filter_channels,third_filter_size, third_filter_stride)
+        self.dropout = nn.Dropout2d(p=0.3)
         # self.rnn_module = nn.LSTM(dim_into_rnn, hidden_size, num_layers=1, batch_first=True,
         #                           bidirectional=bidirectional)
         # self.last_layer_bias = torch.autograd.Variable(torch.zeros((number_of_classes,)))
         # self.conv2output = nn.Linear(dim_without_rnn, number_of_classes)
-        self.softmax = nn.LogSoftmax(dim=1)
+        self.softmax = nn.LogSoftmax(dim=2)
 
     def forward(self, tensor_input):
-        x = self.pool1(self.conv1(tensor_input))
+        x = self.conv1(tensor_input)
+        x = self.dropout(x)
         x = F.relu(x)
         x = self.conv1_bn(x)
-        x = F.relu(self.conv2(x))
+        x = self.conv2(x)
+        x = self.dropout(x)
+        x = F.relu(x)
         x = self.conv2_bn(x)
         x = self.conv3(x)
         x_squeeze = torch.squeeze(x, 2)
@@ -64,6 +68,52 @@ class our_model(nn.Module):
         # in_to_second_conv = ((input_length - filter_one_size[1]) // first_filter_stride + 1)
         # return ((in_to_second_conv - second_filter_size[1]) // second_filter_stride + 1)
         return input_to_bias_width
+
+
+class model_with_pooling(nn.Module):
+    def __init__(self):
+        super(model_with_pooling, self).__init__()
+        self.conv1 = nn.Conv2d(1, 15, 10, stride=1)
+        nn.init.xavier_uniform_(self.conv1.weight)
+        self.conv1_bn = nn.BatchNorm2d(15)
+
+        self.pooling2d = nn.MaxPool2d(2,2)
+        self.conv2 = nn.Conv2d(15, 1, 5,stride=1)
+        nn.init.xavier_uniform_(self.conv2.weight)
+        self.conv2_bn = nn.BatchNorm2d(1)
+
+        self.dropout = nn.Dropout2d(p=0.4)
+        self.rnn_module = nn.LSTM(input_size=72, hidden_size=72, num_layers=2, batch_first=True,
+                                  bidirectional=bidirectional)
+        self.rnn2fc = nn.Linear(72*2, 72*2)
+        self.h2o = nn.Linear(72*2, 27)
+        self.softmax = nn.LogSoftmax(dim=2)
+
+    def forward(self, tensor_input):
+        x = self.conv1(tensor_input)
+        # x = self.dropout(x)
+        x = self.dropout(x)
+        x = self.pooling2d(x)
+        x = self.conv1_bn(x)
+        x = F.relu(x)
+        x = self.conv2(x)
+        # x = self.low_dropout(x)
+        # x = F.relu(x)
+        x = self.conv2_bn(x)
+        # x = self.conv3(x)
+        x = torch.squeeze(x, 1)
+        x = x.permute(0, 2, 1)
+        packed_output,h_n = self.rnn_module(x)
+        fc_layer = self.rnn2fc(packed_output)
+        output_from_cnn = self.h2o(fc_layer)
+        output = self.softmax(output_from_cnn)
+        return output
+
+    def get_seq_length(self,input_length):
+        # in_to_second_conv = ((input_length - filter_one_size[1]) // first_filter_stride + 1)
+        # return ((in_to_second_conv - second_filter_size[1]) // second_filter_stride + 1)
+        return 42
+
 
 hidden_size = 128
 input_size = 161
@@ -100,5 +150,5 @@ input_to_bias_height= ((input_to_third_conv_freq - third_filter_size[0]) // thir
 dim_without_rnn = 38
 
 number_of_classes = 27
-bidirectional = False
+bidirectional = True
 
