@@ -35,9 +35,9 @@ class SR_model(nn.Module):
         x = torch.squeeze(x, 1)
         x = x.permute(0, 2, 1)
         packed_output,h_n = self.rnn_module(x)
-        # fc_layer = self.rnn2fc(packed_output)
-        # output_from_cnn = self.h2o(fc_layer)
-        output_from_cnn = self.h2o(packed_output)
+        fc_layer = self.rnn2fc(packed_output)
+        output_from_cnn = self.h2o(fc_layer)
+        # output_from_cnn = self.h2o(packed_output)
 
         output = self.softmax(output_from_cnn)
         return output

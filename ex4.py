@@ -145,13 +145,8 @@ def train_model(model, train, dev):
 
 
 if __name__ == '__main__':
-    train_on_full_data = True
-    if train_on_full_data:
-        train_data = train_loader
-        dev_data   = valid_loader
-    else:
-        train_data = train_subset
-        dev_data   = dev_subset
+    train_data = train_loader
+    dev_data = valid_loader
     temp_path = "model_to_be_saved_cuda:2_er6_8.pth"
     global idx_to_class
     idx_to_class = {v: k for k, v in train_data.dataset.class_to_idx.items()}
