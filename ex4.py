@@ -8,6 +8,8 @@ from cer import *
 from our_model import *
 from utils import *
 
+EPOCHS = 300
+
 ctc_loss = torch.nn.CTCLoss(blank=0,reduction='mean',zero_infinity=True)
 c2i = "_abcdefghijklmnopqrstuvwxyz"
 
@@ -103,9 +105,9 @@ def train_model(model, train, dev):
     loss_on_dev_per_epoch = []
     loss_on_train_per_epoch = []
     min_error_rate = 999
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     while min_error_rate > 1:
-        for epoch in range(1000):
+        for epoch in range(EPOCHS):
             loss_history_per_batch = []
             model.train()
             print("Epoch {}".format(epoch))
