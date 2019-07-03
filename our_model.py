@@ -18,7 +18,7 @@ class SR_model(nn.Module):
         self.conv2_bn = nn.BatchNorm2d(second_filter_channels)
         nn.init.xavier_uniform_(self.conv2.weight)
         self.rnn_module = nn.LSTM(input_size=dim_into_rnn, hidden_size=rnn_hidden_size, num_layers=2, batch_first=True,
-                                  bidirectional=bidirectional)
+                                  bidirectional=bidirectional, dropout=0.2)
         bidirection_factor = (1 + bidirectional)
         self.rnn2fc = nn.Linear(rnn_hidden_size * bidirection_factor, rnn_hidden_size * bidirection_factor,)
         self.h2o = nn.Linear(rnn_hidden_size * bidirection_factor, number_of_classes)
@@ -26,7 +26,7 @@ class SR_model(nn.Module):
 
     def forward(self, tensor_input):
         x = self.conv1(tensor_input)
-        # x = self.dropout(x)
+        x = self.dropout(x)
         x = self.pooling2d(x)
         x = self.conv1_bn(x)
         x = F.relu(x)
@@ -35,9 +35,9 @@ class SR_model(nn.Module):
         x = torch.squeeze(x, 1)
         x = x.permute(0, 2, 1)
         packed_output,h_n = self.rnn_module(x)
-        fc_layer = self.rnn2fc(packed_output)
-        output_from_cnn = self.h2o(fc_layer)
-        # output_from_cnn = self.h2o(packed_output)
+        # fc_layer = self.rnn2fc(packed_output)
+        # output_from_cnn = self.h2o(fc_layer)
+        output_from_cnn = self.h2o(packed_output)
 
         output = self.softmax(output_from_cnn)
         return output

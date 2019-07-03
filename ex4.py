@@ -103,7 +103,7 @@ def train_model(model, train, dev):
     loss_on_dev_per_epoch = []
     loss_on_train_per_epoch = []
     min_error_rate = 999
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=5e-3)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
     while min_error_rate > 1:
         for epoch in range(1000):
             loss_history_per_batch = []
