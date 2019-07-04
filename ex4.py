@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 
 ctc_loss = torch.nn.CTCLoss(blank=0,reduction='mean',zero_infinity=True)
 c2i = "_abcdefghijklmnopqrstuvwxyz"
-
+best_model_path = "model_to_be_saved_cuda:2_er6_8.pth"
 
 
 def apply(model, ctc_loss_function, batch, labels):
@@ -106,7 +106,7 @@ def train_model(model, train, dev):
     loss_on_dev_per_epoch = []
     loss_on_train_per_epoch = []
     min_error_rate = 999
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=5e-3)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=5e-4)
     while min_error_rate > 1:
         for epoch in range(1000):
             loss_history_per_batch = []
@@ -147,13 +147,20 @@ def train_model(model, train, dev):
     return model
 
 
+def get_model():
+    my_model = model_with_pooling().to(device)
+    if os.path.isfile(PATH_to_model):
+        return my_model.load_state_dict(torch.load(best_model_path, map_location=device))
+    print("untrained model")
+    return my_model
+
 def plot_raw_data(sample, word):
     plt.title(word)
     plt.imshow(sample.squeeze().numpy(), origin='lower')
     plt.show()
 
 if __name__ == '__main__':
-
+    predict_on_test = False
     train_on_full_data = True
     if train_on_full_data:
         train_data = train_loader
@@ -161,26 +168,24 @@ if __name__ == '__main__':
     else:
         train_data = train_subset
         dev_data   = dev_subset
-    temp_path = "model_to_be_saved_cuda:2_er6_8.pth"
+
     global idx_to_class
     idx_to_class = {v: k for k, v in train_data.dataset.class_to_idx.items()}
     speech_model = model_with_pooling().to(device)
     # if os.path.isfile(PATH_to_model):
     #     speech_model.load_state_dict(torch.load(PATH_to_model, map_location=device))
 
-    speech_model.load_state_dict(torch.load(temp_path, map_location=device))
-    speech_model.eval()
-
-
-
-    predict_test(speech_model,test_loader,"test_y")
-    exit()
+    if predict_on_test:
+        predict_on_dev = False
+        speech_model.load_state_dict(torch.load(best_model_path, map_location=device))
+        speech_model.eval()
+        predict_test(speech_model,test_loader,"test_y")
+        if predict_on_dev:
+            x = accuracy_on_dev(speech_model, dev_data, 0, True)
+            print(np.array(x[0]).mean())
+        exit()
 
     print(use_cuda)
-    x = accuracy_on_dev(speech_model,dev_data,0,True)
-    print(np.array(x[0]).mean())
-
-
     train_model(speech_model, train_data, dev_data)
 
     #

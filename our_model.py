@@ -86,7 +86,7 @@ class model_with_pooling(nn.Module):
         self.conv2_bn = nn.BatchNorm2d(1)
 
         self.dropout = nn.Dropout2d(p=0.4)
-        self.rnn_module = nn.LSTM(input_size=72, hidden_size=72, num_layers=2, batch_first=True,
+        self.rnn_module = nn.LSTM(dropout=0.2,input_size=72, hidden_size=72, num_layers=2, batch_first=True,
                                   bidirectional=bidirectional)
         self.rnn2fc = nn.Linear(72*2, 72*2)
         self.h2o = nn.Linear(72*2, 27)
