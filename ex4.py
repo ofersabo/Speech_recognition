@@ -1,19 +1,20 @@
 import ntpath
 
-from our_model import *
-import torch.nn as nn
 import numpy as np
-from utils import *
+import torch.nn as nn
+import torch.nn.functional as F
+
 from cer import *
-from matplotlib import pyplot as plt
+from our_model import *
+from utils import *
+
+EPOCHS = 300
 
 ctc_loss = torch.nn.CTCLoss(blank=0,reduction='mean',zero_infinity=True)
 c2i = "_abcdefghijklmnopqrstuvwxyz"
 best_model_path = "model_to_be_saved_cuda:2_er6_8.pth"
 
-
 def apply(model, ctc_loss_function, batch, labels):
-    import torch.nn.functional as F
     lengths = torch.LongTensor([model.get_seq_length(s.size(2)) for s in batch])
     target_lengths = torch.LongTensor([len(idx_to_class[label.item()]) for label in labels])
     targets = []
@@ -76,8 +77,6 @@ def accuracy_on_dev(model, dev, epoch, print_to_screen = False,file_name = "dev_
     return total_cer, acc_on_dev / len(batch_input) , loss_per_batch
 
 
-
-
 def predict_test(model, testdata, file_name = "dev_word_list"):
     model.eval()
     all_pred_words = []
@@ -106,9 +105,9 @@ def train_model(model, train, dev):
     loss_on_dev_per_epoch = []
     loss_on_train_per_epoch = []
     min_error_rate = 999
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=5e-4)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     while min_error_rate > 1:
-        for epoch in range(1000):
+        for epoch in range(EPOCHS):
             loss_history_per_batch = []
             model.train()
             print("Epoch {}".format(epoch))
@@ -147,51 +146,22 @@ def train_model(model, train, dev):
     return model
 
 
-def get_model():
-    my_model = model_with_pooling().to(device)
-    if os.path.isfile(PATH_to_model):
-        return my_model.load_state_dict(torch.load(best_model_path, map_location=device))
-    print("untrained model")
-    return my_model
-
-def plot_raw_data(sample, word):
-    plt.title(word)
-    plt.imshow(sample.squeeze().numpy(), origin='lower')
-    plt.show()
 
 if __name__ == '__main__':
-    predict_on_test = False
-    train_on_full_data = True
-    if train_on_full_data:
-        train_data = train_loader
-        dev_data   = valid_loader
-    else:
-        train_data = train_subset
-        dev_data   = dev_subset
-
+    train_data = train_loader
+    dev_data = valid_loader
+    temp_path = "model_to_be_saved_cuda:2_er6_8.pth"
     global idx_to_class
     idx_to_class = {v: k for k, v in train_data.dataset.class_to_idx.items()}
-    speech_model = model_with_pooling().to(device)
-    # if os.path.isfile(PATH_to_model):
-    #     speech_model.load_state_dict(torch.load(PATH_to_model, map_location=device))
+    speech_model = SR_model().to(device)
+    if os.path.isfile(PATH_to_model):
+        speech_model.load_state_dict(torch.load(PATH_to_model, map_location=device))
 
-    if predict_on_test:
-        predict_on_dev = False
-        speech_model.load_state_dict(torch.load(best_model_path, map_location=device))
-        speech_model.eval()
-        predict_test(speech_model,test_loader,"test_y")
-        if predict_on_dev:
-            x = accuracy_on_dev(speech_model, dev_data, 0, True)
-            print(np.array(x[0]).mean())
-        exit()
+    speech_model.eval()
+    print("using gpu: " + str(use_cuda))
 
-    print(use_cuda)
     train_model(speech_model, train_data, dev_data)
 
-    #
-    # idx_to_class = {v: k for k, v in debug_subset.dataset.class_to_idx.items()}
-    # for k, (batch_input, batch_label, batch_path) in enumerate(debug_subset):
-    #     for sample, label, path in zip(batch_input, batch_label, batch_path):
-    #         word = idx_to_class[label.item()] +"|"+ FEATURES +"|" + path
-    #         plot_raw_data(sample, word)
+    predict_test(speech_model,test_loader,"test_y")
+
 

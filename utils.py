@@ -1,25 +1,26 @@
 import os
 import pickle
-from gcommand_loader import GCommandLoader, GTestCommandLoader, FEATURES
+import random
+from time import gmtime, strftime
+
 import torch
 from matplotlib import pyplot as plt
-import random
+
+from gcommand_loader import GCommandLoader, GTestCommandLoader
 
 random.seed(1)
 
 train_dataset = GCommandLoader('./data/train/')
 valid_dataset = GCommandLoader('./data/valid/')
-
-filtered_train = GCommandLoader('./data/filtered/train/')
-filtered_dev = GCommandLoader('./data/filtered/dev/')
-
 test_dataset = GTestCommandLoader('./data/test/')
 
-preffix = '/tmp/SR_OE/'
-batch_size = 50
 
+curr_time = strftime("%Y-%m-%d_%H%M%S", gmtime())
+
+
+batch_size = 50
 cuda_device = "cuda:2"
-preffix = '/tmp/SR_OE' + cuda_device + '/'
+preffix = '/tmp/SR_OE' + curr_time + '/'
 PATH_to_model = "model_to_be_saved_" + cuda_device + ".pth"
 
 
@@ -102,7 +103,10 @@ def load_from_file(file):
     in_file.close()
     return var
 
-
+def plot_raw_data(sample, word):
+    plt.title(word)
+    plt.imshow(sample.squeeze().numpy(), origin='lower')
+    plt.show()
 
 train_loader = torch.utils.data.DataLoader(
     train_dataset, batch_size=batch_size, shuffle=True,
@@ -115,18 +119,5 @@ test_loader = torch.utils.data.DataLoader(
     num_workers=20, pin_memory=True, sampler=None)
 
 
-
-
-train_subset = torch.utils.data.DataLoader(filtered_train, batch_size=batch_size, shuffle=True, sampler=None)
-dev_subset = torch.utils.data.DataLoader(filtered_dev, batch_size=batch_size, shuffle=True, sampler=None)
-
-
-#
-# debug_data = GCommandLoader('./data/debug/')
-# debug_subset = torch.utils.data.DataLoader(debug_data, batch_size=100, shuffle=True, sampler=None)
-
-
-
 use_cuda = torch.cuda.is_available()
 device = torch.device(cuda_device if use_cuda else "cpu")
-# device = torch.device("cuda:2")
