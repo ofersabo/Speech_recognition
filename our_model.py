@@ -17,14 +17,11 @@ class SR_model(nn.Module):
         self.conv2 = nn.Conv2d(first_out_channel, second_filter_channels, second_filter_size,stride= second_filter_stride)
         self.conv2_bn = nn.BatchNorm2d(second_filter_channels)
         nn.init.xavier_uniform_(self.conv2.weight)
-        self.conv2_bn = nn.BatchNorm2d(1)
-
-        self.dropout = nn.Dropout2d(p=0.4)
-        self.rnn_module = nn.LSTM(dropout=0.2,input_size=72, hidden_size=72, num_layers=2, batch_first=True,
-                                  bidirectional=bidirectional)
-        self.rnn2fc = nn.Linear(72*2, 72*2)
-        self.h2o = nn.Linear(72*2, 27)
-
+        self.rnn_module = nn.LSTM(input_size=dim_into_rnn, hidden_size=rnn_hidden_size, num_layers=2, batch_first=True,
+                                  bidirectional=bidirectional, dropout=0.2)
+        bidirection_factor = (1 + bidirectional)
+        self.rnn2fc = nn.Linear(rnn_hidden_size * bidirection_factor, rnn_hidden_size * bidirection_factor,)
+        self.h2o = nn.Linear(rnn_hidden_size * bidirection_factor, number_of_classes)
         self.softmax = nn.LogSoftmax(dim=2)
 
     def forward(self, tensor_input):

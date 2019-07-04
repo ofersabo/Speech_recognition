@@ -12,7 +12,7 @@ EPOCHS = 300
 
 ctc_loss = torch.nn.CTCLoss(blank=0,reduction='mean',zero_infinity=True)
 c2i = "_abcdefghijklmnopqrstuvwxyz"
-best_model_path = "model_to_be_saved_cuda:2_er6_8.pth"
+
 
 def apply(model, ctc_loss_function, batch, labels):
     lengths = torch.LongTensor([model.get_seq_length(s.size(2)) for s in batch])
@@ -144,7 +144,6 @@ def train_model(model, train, dev):
                 save_model(model)
 
     return model
-
 
 
 if __name__ == '__main__':
